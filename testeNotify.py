@@ -1,35 +1,56 @@
+import base64
 import sys
+import os
 import asyncio
-import platform
+# import aioconsole
+
 
 from bleak import BleakClient
-from bleak.backends.characteristic import BleakGATTCharacteristic
 
 
-# you can change these to match your device or override them from the command line
-# CHARACTERISTIC_UUID = "f000aa65-0451-4000-b000-000000000000"
-# ADDRESS = (
-#     "24:71:89:cc:09:05"
-#     if platform.system() != "Darwin"
-#     else "B9EA5233-37EF-4DD6-87A8-2A875E821C46"
-# )
+ADDRESS = "C4:49:51:F3:54:F0"
+# #ADDRESS = '00:55:DA:B7:98:9C'
+CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+
+if len(sys.argv) == 3:
+    ADDRESS = sys.argv[1]
+    CHARACTERISTIC_UUID = sys.argv[2]
 
 
-def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
+def notification_handler(sender, data):
     """Simple notification handler which prints the data received."""
-    print("entrou aqui")
-    print(f"{characteristic.description}: {data}")
+    print("{0}: {1}".format(sender, data))
 
 
-async def main(address, char_uuid):
+async def run(address):
     async with BleakClient(address) as client:
-        print(f"Connected: {client.is_connected}")
-        desc = await client.read_gatt_char('6e400003-b5a3-f393-e0a9-e50e24dcca9e')
-        print ("char: ", desc)
-        await client.start_notify(char_uuid, notification_handler)
-        await asyncio.sleep(5.0)
-        await client.stop_notify(char_uuid)
+
+        # await client.connect()
+        print("Is connected")
+        
+        # key = base64.b16decode(b'00x30x09')
+        key2 = bytes([0x03, 0x08])
+        key3 = bytearray(b'Java2Blog').decode('utf-8')
+        
+        # print(key)
+        print(key2)
+        print(key3)
+
+        # start notifications on control characteristic
+        await client.start_notify('6e400003-b5a3-f393-e0a9-e50e24dcca9e', notification_handler)
+        # write to control handle, set preset to 21
+        await client.write_gatt_char('6e400002-b5a3-f393-e0a9-e50e24dcca9e', key2 , response=True)
+        # write to control handle get device info
+        # start notifications on TP9
+        await client.start_notify('6e400003-b5a3-f393-e0a9-e50e24dcca9e', notification_handler)
+        # wait for input
+        # await aioconsole.ainput('Running: Press a key to quit')
+        await client.stop_notify('6e400003-b5a3-f393-e0a9-e50e24dcca9e')
 
 
 if __name__ == "__main__":
-    asyncio.run(main('C4:49:51:F3:54:F0', '6e400003-b5a3-f393-e0a9-e50e24dcca9e'))
+
+    os.environ["PYTHONASYNCIODEBUG"] = str(1)
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(run(ADDRESS))
+    asyncio.run(run(ADDRESS))

@@ -1,0 +1,6 @@
+import numpy as np
+
+
+# key3 = bytearray(b'\xc4IQ').decode('uint8')
+# print(key3)
+print(np.frombuffer(b'\x01\x03\xc4IQ\xf3T\xf0\x01\x00\x01\x00\x00\x00\x00\x00]\x01\x02\x020\x07\x02\x02\x00\x00', dtype=np.uint8))

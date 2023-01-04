@@ -7,12 +7,14 @@ from bleak import _logger as logger
 
 
 CHARACTERISTIC_UUID = (
-    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 )  # <--- Change to the characteristic you want to enable notifications from.
 
 
 def notification_handler(sender, data):
     """Simple notification handler which prints the data received."""
+    print("entrou")
+    print ("teste: ", data)
     print("{0}: {1}".format(sender, data))
 
 
