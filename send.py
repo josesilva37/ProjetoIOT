@@ -1,6 +1,5 @@
 import pika
 
-
 #Read BLE Data
 
 #Send BLE Data to Broker
