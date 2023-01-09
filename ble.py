@@ -46,6 +46,7 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
 
 key_header = bytes([0x03, 0x08])
 key_start_ble_stream = bytes([0x03, 0x00, 0x00])
+
 async def main(address, char_uuid):
     async with BleakClient(address) as client:
         print(f"Connected: {client.is_connected}")
