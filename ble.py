@@ -15,7 +15,7 @@ import platform
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pika
-
+import numpy as np
 
 # you can change these to match your device or override them from the command line
 CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
@@ -25,46 +25,68 @@ ADDRESS = (
     "C4:49:51:F3:54:F0"
 )
 
-#Const variables
+# Const variables
 G = 9.807
 ACC_RANGE = 8.0
 RAW_SCALLING = 32768.0
-accScale = G / (RAW_SCALLING/ ACC_RANGE)
+accScale = G / (RAW_SCALLING / ACC_RANGE)
 PI = 3.14159
 D2R = PI / 180.0
-gyroScalle = 1000.0 / RAW_SCALLING * D2R
-magScalle =  4912.0 / RAW_SCALLING
+gyroScale = 1000.0 / RAW_SCALLING * D2R
+magScale = 4912.0 / RAW_SCALLING
+TEMP_OFFSET = 21
+TEMP_SCALE = 333.87
 
-#Send BLE Data to Broker
+# Send BLE Data to Broker
 host = '192.168.1.158'
 credentials = pika.PlainCredentials("admin", "admin")
 parameters = pika.ConnectionParameters(host, 5672, '/', credentials)
-connection = pika.BlockingConnection(parameters)
+# connection = pika.BlockingConnection(parameters)
 
-channel = connection.channel()
+# channel = connection.channel()
 
-channel.queue_declare(queue='battery')
+# channel.queue_declare(queue='battery')
 
-#Read BLE Data
+# Read BLE Data
+
+
 def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
     """Simple notification handler which prints the data received."""
     print(f"{characteristic.description}: {data}")
-    print(data[102])
+
+    if (data[0] == 4):
+        acc_x = np.frombuffer(data[23:25], dtype=np.uint16) * accScale
+        acc_y = np.frombuffer(data[25:27], dtype=np.uint16) * accScale
+        acc_z = np.frombuffer(data[27:29], dtype=np.uint16) * accScale
+        gyro_x = np.frombuffer(data[29:31], dtype=np.uint16) * gyroScale
+        gyro_y = np.frombuffer(data[31:33], dtype=np.uint16) * gyroScale
+        gyro_z = np.frombuffer(data[33:35], dtype=np.uint16) * gyroScale
+        temp =  ( ( np.frombuffer(data[35:37], dtype=np.uint16) - TEMP_OFFSET ) / TEMP_SCALE ) + TEMP_OFFSET
+        mag_x = np.frombuffer(data[37:39], dtype=np.uint16) * magScale
+        mag_y = np.frombuffer(data[39:41], dtype=np.uint16) * magScale
+        mag_z = np.frombuffer(data[41:43], dtype=np.uint16) * magScale
+        battery = data[5]
+        print("Battery:" + str(battery))
+        print(temp)
+    
     # channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
     # connection.close()
 
+
 key_header = bytes([0x03, 0x08])
 key_start_ble_stream = bytes([0x03, 0x00, 0x00])
+key_setSR_mode = bytes([0x03, 0x01, 0x01, 0x04])
+
 
 async def main(address, char_uuid):
     async with BleakClient(address) as client:
         print(f"Connected: {client.is_connected}")
         # print(await client.read_gatt_descriptor("0x7fa5ac5147c0"))
         # print(client.services.)
-        
+
         # print(await client.read_gatt_char("6e400003-b5a3-f393-e0a9-e50e24dcca9e"))
         await client.start_notify(char_uuid, notification_handler)
-        await client.write_gatt_char(CHARACTERISTIC_UUID2,key_start_ble_stream )
+        await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
         # print(bytearray(b'\x01\x03\xc4IQ\xf3T\xf0\x01\x00\x01\x00\x00\x00\x00\x00:\x01\x02\x020\x07\x02\x02\x00\x00').decode('utf-16'))
         await asyncio.sleep(5.0)
         # await client.stop_notify(char_uuid)
