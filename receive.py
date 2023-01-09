@@ -1,18 +1,18 @@
 import pika, sys, os
 
 def main():
-    credentials = pika.PlainCredentials("jose", "qwerty")
-    host = "192.168.229.159"
+    credentials = pika.PlainCredentials("admin", "admin")
+    host = '192.168.1.158'
     parameters = pika.ConnectionParameters(host, 5672, '/', credentials)
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
-    channel.queue_declare(queue='pedometer')
+    channel.queue_declare(queue='hello')
 
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body)
 
-    channel.basic_consume(queue='pedometer', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='hello', on_message_callback=callback, auto_ack=True)
 
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()

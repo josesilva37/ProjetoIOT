@@ -3,13 +3,15 @@ import pika
 #Read BLE Data
 
 #Send BLE Data to Broker
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='localhost'))
+host = '192.168.1.158'
+credentials = pika.PlainCredentials("admin", "admin")
+parameters = pika.ConnectionParameters(host, 5672, '/', credentials)
+connection = pika.BlockingConnection(parameters)
+
 channel = connection.channel()
 
-channel.exchange_declare(exchange='data', exchange_type='fanout')
-# channel.queue_declare(queue='pedometer')
+channel.queue_declare(queue='battery')
 
-channel.basic_publish(exchange='', routing_key='pedometer', body='Test')
+channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
 print(" [x] Sent 'Hello World!'")
 connection.close()

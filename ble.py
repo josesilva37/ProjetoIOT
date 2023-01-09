@@ -14,6 +14,7 @@ import platform
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
+import pika
 
 
 # you can change these to match your device or override them from the command line
@@ -25,11 +26,26 @@ ADDRESS = (
 )
 
 
+#Send BLE Data to Broker
+host = '192.168.1.158'
+credentials = pika.PlainCredentials("admin", "admin")
+parameters = pika.ConnectionParameters(host, 5672, '/', credentials)
+connection = pika.BlockingConnection(parameters)
+
+channel = connection.channel()
+
+channel.queue_declare(queue='battery')
+
+#Read BLE Data
 def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
     """Simple notification handler which prints the data received."""
     print(f"{characteristic.description}: {data}")
+    print(data[102])
+    # channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
+    # connection.close()
 
-key = bytes([0x03, 0x00, 0x07])
+key_header = bytes([0x03, 0x08])
+key_start_ble_stream = bytes([0x03, 0x00, 0x00])
 async def main(address, char_uuid):
     async with BleakClient(address) as client:
         print(f"Connected: {client.is_connected}")
@@ -38,11 +54,10 @@ async def main(address, char_uuid):
         
         # print(await client.read_gatt_char("6e400003-b5a3-f393-e0a9-e50e24dcca9e"))
         await client.start_notify(char_uuid, notification_handler)
-        await client.write_gatt_char(CHARACTERISTIC_UUID2,key )
+        await client.write_gatt_char(CHARACTERISTIC_UUID2,key_start_ble_stream )
         # print(bytearray(b'\x01\x03\xc4IQ\xf3T\xf0\x01\x00\x01\x00\x00\x00\x00\x00:\x01\x02\x020\x07\x02\x02\x00\x00').decode('utf-16'))
         await asyncio.sleep(5.0)
         # await client.stop_notify(char_uuid)
-
 
 if __name__ == "__main__":
     asyncio.run(
