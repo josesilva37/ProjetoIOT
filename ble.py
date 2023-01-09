@@ -25,6 +25,15 @@ ADDRESS = (
     "C4:49:51:F3:54:F0"
 )
 
+#Const variables
+G = 9.807
+ACC_RANGE = 8.0
+RAW_SCALLING = 32768.0
+accScale = G / (RAW_SCALLING/ ACC_RANGE)
+PI = 3.14159
+D2R = PI / 180.0
+gyroScalle = 1000.0 / RAW_SCALLING * D2R
+magScalle =  4912.0 / RAW_SCALLING
 
 #Send BLE Data to Broker
 host = '192.168.1.158'
