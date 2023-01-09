@@ -11,7 +11,7 @@ Updated on 2019-07-03 by hbldh <henrik.blidh@gmail.com>
 import sys
 import asyncio
 import platform
-
+import numpy as np
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pika
@@ -55,6 +55,13 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
     print(f"{characteristic.description}: {data}")
 
     if (data[0] == 4):
+        ###### Info ########
+        battery = data[5]
+        print("Battery:" + str(battery))
+
+
+        ###### IMU ########
+
         acc_x = np.frombuffer(data[23:25], dtype=np.uint16) * accScale
         acc_y = np.frombuffer(data[25:27], dtype=np.uint16) * accScale
         acc_z = np.frombuffer(data[27:29], dtype=np.uint16) * accScale
@@ -65,10 +72,25 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
         mag_x = np.frombuffer(data[37:39], dtype=np.uint16) * magScale
         mag_y = np.frombuffer(data[39:41], dtype=np.uint16) * magScale
         mag_z = np.frombuffer(data[41:43], dtype=np.uint16) * magScale
-        battery = data[5]
-        print("Battery:" + str(battery))
-        print(temp)
+
     
+        ###### SOLE ########
+        hallux = np.frombuffer(data[7:9], dtype=np.uint16)
+        toes = np.frombuffer(data[9:11], dtype=np.uint16)
+        met1 = np.frombuffer(data[11:13], dtype=np.uint16)
+        met3 = np.frombuffer(data[13:15], dtype=np.uint16)
+        met5 = np.frombuffer(data[15:17], dtype=np.uint16)
+        arch = np.frombuffer(data[17:19], dtype=np.uint16)
+        heelL = np.frombuffer(data[19:21], dtype=np.uint16)
+        heelR = np.frombuffer(data[21:23], dtype=np.uint16)
+        print("Hallux: ", hallux)
+        print("Toes: ", toes)
+        print("Met 1: ", met1)
+        print("Met 3: ", met3)
+        print("Met 5: ", met5)
+        print("arch: ", arch)
+        print("Heel L: ", heelL)
+        print("Heel R: ", heelR)
     # channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
     # connection.close()
 
@@ -88,7 +110,7 @@ async def main(address, char_uuid):
         await client.start_notify(char_uuid, notification_handler)
         await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
         # print(bytearray(b'\x01\x03\xc4IQ\xf3T\xf0\x01\x00\x01\x00\x00\x00\x00\x00:\x01\x02\x020\x07\x02\x02\x00\x00').decode('utf-16'))
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(3.0)
         # await client.stop_notify(char_uuid)
 
 if __name__ == "__main__":
