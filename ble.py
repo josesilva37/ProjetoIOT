@@ -29,7 +29,7 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
     """Simple notification handler which prints the data received."""
     print(f"{characteristic.description}: {data}")
 
-key = bytes([0x03, 0x00, 0x07])
+key = bytes([0x03, 0x08])
 async def main(address, char_uuid):
     async with BleakClient(address) as client:
         print(f"Connected: {client.is_connected}")
