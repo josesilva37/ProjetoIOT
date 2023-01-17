@@ -89,7 +89,7 @@ async def connect(address):
             await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
             await client.write_gatt_char(CHARACTERISTIC_UUID2, key_header)
             await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
-            await client.stop_notify(CHARACTERISTIC_UUID)
+            # await client.stop_notify(CHARACTERISTIC_UUID)
             # connection.close()
 
 async def main():
