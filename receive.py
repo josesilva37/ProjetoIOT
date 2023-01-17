@@ -55,7 +55,7 @@ def main():
         print("Heel L: ", heelL)
         print("Heel R: ", heelR)
         
-    channel.basic_consume(queue='packet4', on_message_callback=callback, auto_ack=True)
+    channel.basic_consume(queue='packet4_left', on_message_callback=callback, auto_ack=True)
 
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()

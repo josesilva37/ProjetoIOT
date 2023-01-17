@@ -56,11 +56,15 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
     
     if (data[0] == 1):
         if (data[16] == 0):
+            side = 'left'
             channel.queue_declare(queue='header_left')
             channel.basic_publish(exchange='', routing_key='header_left', body=data)
+            return side
         elif (data[16] == 1):
+            side = 'right'
             channel.queue_declare(queue='header_right')
             channel.basic_publish(exchange='', routing_key='header_right', body=data)
+            return side
         elif (data[16] == 2):
             channel.queue_declare(queue='header_none')
             channel.basic_publish(exchange='', routing_key='header_none', body=data)
@@ -69,8 +73,13 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
             channel.basic_publish(exchange='', routing_key='header_imu', body=data)
 
     if (data[0] == 4):
-        channel.queue_declare(queue='packet4')
-        channel.basic_publish(exchange='', routing_key='packet4', body=data)     
+        # print(side)
+        channel.queue_declare(queue='packet4_left')
+        channel.basic_publish(exchange='', routing_key='packet4_left', body=data)
+        # if(side.__contains__('left')):
+        # elif(side.__contains__('right')):
+        #     channel.queue_declare(queue='packet4_right')
+        #     channel.basic_publish(exchange='', routing_key='packet4_right', body=data)      
 
 
 key_header = bytes([0x03, 0x08])
@@ -94,6 +103,25 @@ async def connect(address):
 
 async def main():
    await connect(ADDRESS)
+    # if(len(sys.argv) > 2):
+    #     task1 = asyncio.create_task(connect(sys.argv[1]))
+    #     task2 = asyncio.create_task(connect(sys.argv[2]))
+    #     await task1
+    #     await task2
+    # else:
+    #     await connect(ADDRESS)
+
+
+
+# if __name__ == "__main__":
+#     asyncio.run(
+#         main(
+#             [
+#                 "C4:49:51:F3:54:F0",
+#                 "C4:49:51:F3:54:F2",
+#             ]
+#         )
+#     )
 
 if __name__ == '__main__':
     try:
