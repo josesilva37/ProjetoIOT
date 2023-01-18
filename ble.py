@@ -10,6 +10,7 @@ Updated on 2019-07-03 by hbldh <henrik.blidh@gmail.com>
 """
 import sys
 import asyncio
+import time
 import platform
 import numpy as np
 from bleak import BleakClient
@@ -44,90 +45,63 @@ TEMP_SCALE = 333.87
 host = '192.168.1.158'
 credentials = pika.PlainCredentials("admin", "admin")
 parameters = pika.ConnectionParameters(host, 5672, '/', credentials)
-# connection = pika.BlockingConnection(parameters)
+connection = pika.BlockingConnection(parameters)
 
-# channel = connection.channel()
+channel = connection.channel()
 
 # Read BLE Data
 
-def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray, side: str):
+def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
     """Simple notification handler which prints the data received."""
     print(f"{characteristic.description}: {data}")
     
     if (data[0] == 1):
-        if (data[16] == 0):
-            side = 'left'
+        print("bateria: ", data[16])
+        if (data[17] == 0):
             channel.queue_declare(queue='header_left')
             channel.basic_publish(exchange='', routing_key='header_left', body=data)
-            return side
-        elif (data[16] == 1):
-            side = 'right'
+        elif (data[17] == 1):
             channel.queue_declare(queue='header_right')
             channel.basic_publish(exchange='', routing_key='header_right', body=data)
-            return side
-        elif (data[16] == 2):
+        elif (data[17] == 2):
             channel.queue_declare(queue='header_none')
             channel.basic_publish(exchange='', routing_key='header_none', body=data)
-        elif (data[16] == 3):
+        elif (data[17] == 3):
             channel.queue_declare(queue='header_imu')
             channel.basic_publish(exchange='', routing_key='header_imu', body=data)
 
     if (data[0] == 4):
-        print(side)
-        if(side.__contains__('left')):
-            channel.queue_declare(queue='packet4_left')
-            channel.basic_publish(exchange='', routing_key='packet4_left', body=data)
-        elif(side.__contains__('right')):
-            channel.queue_declare(queue='packet4_right')
-            channel.basic_publish(exchange='', routing_key='packet4_right', body=data)      
+        channel.queue_declare(queue='packet4_right')
+        channel.basic_publish(exchange='', routing_key='packet4_right', body=data)      
+        # if(side.__contains__('left')):
+        #     channel.queue_declare(queue='packet4_left')
+        #     channel.basic_publish(exchange='', routing_key='packet4_left', body=data)
+        # elif(side.__contains__('right')):
 
 
 key_header = bytes([0x03, 0x08])
 key_start_ble_stream = bytes([0x03, 0x00, 0x00])
+key_start_ble_streamD = bytes([0x03, 0x00, 0x01])
 key_setSR_mode = bytes([0x03, 0x01, 0x01, 0x04])
 
 
 async def connect(address):
-    async with BleakClient(address) as client:
-        print(f"Connected: {client.is_connected}")
-        # print(await client.read_gatt_descriptor("0x7fa5ac5147c0"))
-        # print(client.services.)
-
-        # print(await client.read_gatt_char("6e400003-b5a3-f393-e0a9-e50e24dcca9e"))
-        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
-        side = await client.write_gatt_char(CHARACTERISTIC_UUID2, key_header,'')
-        await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream, side)
-        await asyncio.sleep(10.0)
-        # await client.stop_notify(char_uuid)
-        # connection.close()
+    try:
+        async with BleakClient(address) as client:
+            print(f"Connected: {client.is_connected}")
+            await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
+            await client.write_gatt_char(CHARACTERISTIC_UUID2, key_header)
+            await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
+            await asyncio.sleep(5.0)
+            # await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_streamD)
+            # connection.close()
+    except:
+        print('Palminha não conectada')
 
 async def main():
-    if(len(sys.argv) > 2):
-        task1 = asyncio.create_task(connect(sys.argv[1]))
-        task2 = asyncio.create_task(connect(sys.argv[2]))
-        await task1
-        await task2
-    else:
+    while True:
         await connect(ADDRESS)
-
+        
 asyncio.run(main())
 
-# if __name__ == "__main__":
-#     if(len(sys.argv) > 2):
-#         # list=[sys.argv[1],sys.argv[2]]
-#         # list2=["6e400002-b5a3-f393-e0a9-e50e24dcca9e","6e400002-b5a3-f393-e0a9-e50e24dcca9e"]
-#         # print(list)
-#         # with ThreadPool() as pool:
-#         #     pool.map_async(connect, list)
-       
 
-#     else:
-#         asyncio.run(connect(ADDRESS))
-#     # asyncio.run(
-
-#     #     # 
-#     #     main(
-#     #         sys.argv[1] if len(sys.argv) > 1 else ADDRESS,
-#     #         sys.argv[2] if len(sys.argv) > 2 else CHARACTERISTIC_UUID,
-#     #     )
-# # )
