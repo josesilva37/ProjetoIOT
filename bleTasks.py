@@ -11,7 +11,6 @@ Updated on 2019-07-03 by hbldh <henrik.blidh@gmail.com>
 import os
 import sys
 import asyncio
-import time
 import platform
 import numpy as np
 from bleak import BleakClient
@@ -56,52 +55,49 @@ def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearra
     print(f"{characteristic.description}: {data}")
     
     if (data[0] == 1):
-        print("bateria: ", data[16])
-        if (data[17] == 0):
+        if (data[16] == 0):
+            side = 'left'
             channel.queue_declare(queue='header_left')
             channel.basic_publish(exchange='', routing_key='header_left', body=data)
-        elif (data[17] == 1):
+            return side
+        elif (data[16] == 1):
+            side = 'right'
             channel.queue_declare(queue='header_right')
             channel.basic_publish(exchange='', routing_key='header_right', body=data)
-        elif (data[17] == 2):
+            return side
+        elif (data[16] == 2):
             channel.queue_declare(queue='header_none')
             channel.basic_publish(exchange='', routing_key='header_none', body=data)
-        elif (data[17] == 3):
+        elif (data[16] == 3):
             channel.queue_declare(queue='header_imu')
             channel.basic_publish(exchange='', routing_key='header_imu', body=data)
 
     if (data[0] == 4):
-        channel.queue_declare(queue='packet4_right')
-        channel.basic_publish(exchange='', routing_key='packet4_right', body=data)      
-        # if(side.__contains__('left')):
-        #     channel.queue_declare(queue='packet4_left')
-        #     channel.basic_publish(exchange='', routing_key='packet4_left', body=data)
-        # elif(side.__contains__('right')):
+        channel.queue_declare(queue='packet4')
+        channel.basic_publish(exchange='', routing_key='packet4', body=data)    
 
 
 key_header = bytes([0x03, 0x08])
 key_start_ble_stream = bytes([0x03, 0x00, 0x00])
-key_start_ble_streamD = bytes([0x03, 0x00, 0x01])
 key_setSR_mode = bytes([0x03, 0x01, 0x01, 0x04])
 
 
 async def connect(address):
-    try:
-        async with BleakClient(address) as client:
-            print(f"Connected: {client.is_connected}")
-            await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
-            await client.write_gatt_char(CHARACTERISTIC_UUID2, key_header)
-            await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
-            await asyncio.sleep(5.0)
-            # await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_streamD)
-            # connection.close()
-    except:
-        print('Palminha não conectada')
+    async with BleakClient(address) as client:
+        print(f"Connected: {client.is_connected}")
+        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
+        await client.write_gatt_char(CHARACTERISTIC_UUID2, key_header)
+        await client.write_gatt_char(CHARACTERISTIC_UUID2, key_start_ble_stream)
 
 async def main():
-    while True:
+    if(len(sys.argv) > 2):
+        task1 = asyncio.create_task(connect(sys.argv[1]))
+        task2 = asyncio.create_task(connect(sys.argv[2]))
+        await task1
+        await task2
+    else:
+        print("a")
         await connect(ADDRESS)
-        
-asyncio.run(main())
+if __name__ == '__main__':
 
-
+    asyncio.run(main())

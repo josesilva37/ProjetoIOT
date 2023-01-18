@@ -1,5 +1,7 @@
 import pika, sys, os
 import numpy as np
+import pandas as pd
+
 # Const variables
 G = 9.807
 ACC_RANGE = 8.0
@@ -12,7 +14,6 @@ magScale = 4912.0 / RAW_SCALLING
 TEMP_OFFSET = 21
 TEMP_SCALE = 333.87
 
-
 def main():
     credentials = pika.PlainCredentials("admin", "admin")
     host = '192.168.1.158'
@@ -20,10 +21,13 @@ def main():
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
-
-    def callback(ch, method, properties, data):
+    def callbackHeader(ch, method, properties, data):
+        battery = np.frombuffer(data[16])
+        side = np.frombuffer(data[17])
+    def callbackPacket(ch, method, properties, data):
+        df = pd.read_csv('./Dashboard/dataset.csv', sep=',')
          ###### IMU ########
-
+        df.set_index('index', inplace=True)
         acc_x = np.frombuffer(data[23:25], dtype=np.uint16) * accScale
         acc_y = np.frombuffer(data[25:27], dtype=np.uint16) * accScale
         acc_z = np.frombuffer(data[27:29], dtype=np.uint16) * accScale
@@ -46,17 +50,15 @@ def main():
         arch = np.frombuffer(data[17:19], dtype=np.uint16)
         heelL = np.frombuffer(data[19:21], dtype=np.uint16)
         heelR = np.frombuffer(data[21:23], dtype=np.uint16)
-        print("Hallux: ", hallux)
-        print("Toes: ", toes)
-        print("Met 1: ", met1)
-        print("Met 3: ", met3)
-        print("Met 5: ", met5)
-        print("arch: ", arch)
-        print("Heel L: ", heelL)
-        print("Heel R: ", heelR)
         
-    channel.basic_consume(queue='packet4', on_message_callback=callback, auto_ack=True)
+        df.loc[len(df)+1] =[acc_x, acc_y, acc_z,gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, hallux, toes, met1, met3, met5, arch, heelL, heelR]
+        print(df)
+        df.to_csv('./Dashboard/dataset.csv')
+        
 
+        
+    channel.basic_consume(queue='packet4_right', on_message_callback=callbackPacket, auto_ack=True)
+    # channel.basic_consume(queue='header_left', on_message_callback=callbackHeader, auto_ack=True)
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
 
