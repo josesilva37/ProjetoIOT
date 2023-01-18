@@ -25,7 +25,7 @@ def main():
         battery = np.frombuffer(data[16])
         side = np.frombuffer(data[17])
     def callbackPacket(ch, method, properties, data):
-        df = pd.read_csv('./dataset.csv', sep=',')
+        df = pd.read_csv('./Dashboard/dataset.csv', sep=',')
          ###### IMU ########
         df.set_index('index', inplace=True)
         acc_x = np.frombuffer(data[23:25], dtype=np.uint16) * accScale
@@ -50,22 +50,14 @@ def main():
         arch = np.frombuffer(data[17:19], dtype=np.uint16)
         heelL = np.frombuffer(data[19:21], dtype=np.uint16)
         heelR = np.frombuffer(data[21:23], dtype=np.uint16)
-        # print("Hallux: ", hallux)
-        # print("Toes: ", toes)
-        # print("Met 1: ", met1)
-        # print("Met 3: ", met3)
-        # print("Met 5: ", met5)
-        # print("arch: ", arch)
-        # print("Heel L: ", heelL)
-        # print("Heel R: ", heelR)
         
-        df.loc[len(df)] =[acc_x, acc_y, acc_z,gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, hallux, toes, met1, met3, met5, arch, heelL, heelR]
+        df.loc[len(df)+1] =[acc_x, acc_y, acc_z,gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, hallux, toes, met1, met3, met5, arch, heelL, heelR]
         print(df)
-        df.to_csv('./dataset.csv')
+        df.to_csv('./Dashboard/dataset.csv')
         
 
         
-    channel.basic_consume(queue='packet4', on_message_callback=callbackPacket, auto_ack=True)
+    channel.basic_consume(queue='packet4_right', on_message_callback=callbackPacket, auto_ack=True)
     # channel.basic_consume(queue='header_left', on_message_callback=callbackHeader, auto_ack=True)
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
